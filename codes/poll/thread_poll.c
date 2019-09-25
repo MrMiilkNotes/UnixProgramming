@@ -155,7 +155,16 @@ int pool_destroy(thread_pool_t* t_pool) {
     t_pool->status = 0; // shutdown
     pthread_mutex_unlock(&(t_pool->lock));
 
-    pthread_join()
+    pthread_join(t_pool->manger, NULL);
+
+    for(i = 0; i < t_pool->count_all; ++i) {
+        pthread_cond_signal(&(t_pool->pool_not_empty));
+    }
+    for(i = 0; i < t_pool->limit_max; ++i) {
+        pthread_join(t_pool->workers[i]);
+        // EINVA
+    }
+    _pool_free(t_pool);
 }
 
 // TODO: 线程的取消应该可以使用cancelstate的方式
