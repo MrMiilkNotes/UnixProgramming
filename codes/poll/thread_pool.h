@@ -14,7 +14,7 @@
 #define POOL_SIZE_MAX POOL_INIT_SIZE * 10  // 最大
 #define POOL_SIZE_MIN POOL_INIT_SIZE       // 最小
 #define POOL_STEP 5                        // 增加或者减少线程的步长
-#define POOL_MANAGER_LOOP 10               // 管理者线程定时周期
+#define POOL_MANAGER_LOOP 5                // 管理者线程定时周期
 #define POOL_TASK_QUEUE_SIZE 2048          // 任务队列大小
 
 // ------------------------------------------------------------------------

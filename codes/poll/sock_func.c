@@ -1,10 +1,5 @@
-#include<unistd.h>
-#include<sys/types.h>
-#include<sys/socket.h>
-#include<arpa/inet.h>
-#include <errno.h>
+
 #include"./sock_func.h"
-#include"../include/apue.h"
 
 int Socket(int domain, int type, int protocol) {
     int ret;

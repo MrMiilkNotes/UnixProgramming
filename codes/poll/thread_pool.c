@@ -11,6 +11,7 @@ thread_pool_t *pool_create(size_t sz_init, size_t sz_min, size_t sz_max,
                            size_t task_mx) {
   int ret, i;
   thread_pool_t *thread_pool_ptr;
+  printf("creating thread pool ...\n");
   do {
     if (sz_init < sz_min) {
       printf("sz_init < sz_min\n");
@@ -61,6 +62,8 @@ thread_pool_t *pool_create(size_t sz_init, size_t sz_min, size_t sz_max,
     thread_pool_ptr->limit_min = sz_min;
     thread_pool_ptr->limit_max = sz_max;
 
+    printf("space allocated ...\n");
+
     // -----------------------------------------------------
     // 启动工作线程以及管理者线程
     //      启动的时候尚未开始监听，也不会有其他线程执行，因此对线程池的操作都不需要加锁
@@ -79,6 +82,8 @@ thread_pool_t *pool_create(size_t sz_init, size_t sz_min, size_t sz_max,
       break;
     }
 
+    printf("work and manger thread created ...\n");
+    printf("Done\n");
     return thread_pool_ptr;
   } while (0);
   // 创建出错
@@ -87,6 +92,7 @@ thread_pool_t *pool_create(size_t sz_init, size_t sz_min, size_t sz_max,
 }
 
 int pool_add(thread_pool_t *t_pool, void (*handler)(void *arg), void *arg) {
+  printf("adding task to pool ...\n");
   int ret;
   pthread_mutex_lock(&(t_pool->lock));
   while ((t_pool->status) && (t_pool->queue_sz <= t_pool->n_task)) {
@@ -115,6 +121,7 @@ int pool_add(thread_pool_t *t_pool, void (*handler)(void *arg), void *arg) {
     t_pool->queue_tail = (t_pool->queue_tail + 1) % t_pool->queue_sz;
     t_pool->n_task++;
 
+    printf("new task added\n");
     pthread_cond_signal(&(t_pool->pool_not_empty));
   } while (0);
   pthread_mutex_unlock(&(t_pool->lock));
@@ -149,13 +156,14 @@ void *thr_manager(void *arg) {
   thread_pool_t *t_pool_ptr = (thread_pool_t *)arg;
   while (t_pool_ptr->status != 0) {
     sleep(POOL_MANAGER_LOOP);
+    printf("manger waked ...\n");
 
     // TODO: 任务队列中任务数量也可以作为参考量
     pthread_mutex_lock(&(t_pool_ptr->count_lock));
     num_act = (float)t_pool_ptr->count_act;
     num_all = (float)t_pool_ptr->count_all;
     pthread_mutex_unlock(&(t_pool_ptr->count_lock));
-
+    printf("thread pool state: %f/%f\n", num_act, num_all);
     if (num_act / num_all < 0.3) {
       // 减少线程池中线程数量
       pthread_mutex_lock(&(t_pool_ptr->lock));
@@ -200,7 +208,7 @@ void *thr_worker(void *arg) {
     //      处理manger要求工作线程退出
     //      处理线程池进入销毁状态
     // -----------------------------------------------------
-    while ((t_pool_ptr->status) && (t_pool_ptr->n_task > 0)) {
+    while ((t_pool_ptr->status) && (t_pool_ptr->n_task == 0)) {
       if ((ret = pthread_cond_wait(&(t_pool_ptr->pool_not_empty),
                                    &(t_pool_ptr->lock))) != 0) {
         printf("In thr_worker: error while cond_wait, error num = %d\n", ret);
@@ -213,12 +221,14 @@ void *thr_worker(void *arg) {
         if (t_pool_ptr->count_all > t_pool_ptr->limit_min) {
           t_pool_ptr->count_all--;
           pthread_mutex_unlock(&(t_pool_ptr->lock));
+          printf("thread: %lu exited", pthread_self());
           pthread_exit(NULL);
         }
       }
     }
     // 线程池进入销毁状态
     if (t_pool_ptr->status == 0) {
+      pthread_mutex_unlock(&(t_pool_ptr->lock));
       break;
     }
     // -----------------------------------------------------
@@ -226,6 +236,7 @@ void *thr_worker(void *arg) {
     //      这里不能使用指针，因为任务分离出来后，任务队列随时会被覆盖
     //      应该直接做一份task的拷贝
     // -----------------------------------------------------
+    printf("thread: %lu got a task\n", pthread_self());
     task.handler = t_pool_ptr->tasks[t_pool_ptr->queue_head].handler;
     task.arg = t_pool_ptr->tasks[t_pool_ptr->queue_head].arg;
     t_pool_ptr->queue_head =
@@ -233,7 +244,6 @@ void *thr_worker(void *arg) {
     t_pool_ptr->n_task--;
     pthread_cond_signal(&(t_pool_ptr->pool_not_full));
     pthread_mutex_unlock(&(t_pool_ptr->lock));
-
     // -----------------------------------------------------
     // 线程进入处理任务状态
     //      先记录自己进入忙状态，之后执行工作
@@ -241,7 +251,9 @@ void *thr_worker(void *arg) {
     // -----------------------------------------------------
     pthread_mutex_lock(&(t_pool_ptr->count_lock));
     t_pool_ptr->count_act++;
+    printf("thread: %lu activated\n", pthread_self());
     pthread_mutex_unlock(&(t_pool_ptr->count_lock));
+    printf("thread: %lu finished work\n", pthread_self());
     // 执行指定的函数
     (task.handler)(task.arg);
 
@@ -272,7 +284,7 @@ int _poll_lock_init(thread_pool_t *thread_poll) {
 }
 
 int _pool_free(thread_pool_t *thread_pool) {
-  if (thread_pool == NULL) return;
+  if (thread_pool == NULL) return -1;
   int i, ret;
   do {
     pthread_mutex_lock(&(thread_pool->lock));

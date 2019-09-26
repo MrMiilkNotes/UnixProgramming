@@ -1,4 +1,3 @@
-#include<sys/epoll.h>
 #include"../include/apue.h"
 
 int Epoll_create(int size) {

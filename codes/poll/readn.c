@@ -1,9 +1,4 @@
-#include<unistd.h>
-#include<sys/socket.h>
-#include<sys/types.h>
-#include <errno.h>
 #include"./readn.h"
-#include"../include/apue.h"
 
 ssize_t __readn_(int fd, void *buf, size_t len) {
     int ret;
