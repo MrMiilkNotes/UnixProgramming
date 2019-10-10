@@ -112,10 +112,10 @@ int pool_add(thread_pool_t *t_pool, void (*handler)(void *arg), void *arg) {
     //      这里已经执行完成的任务直到使用的时候才free，会导致有部分处于"泄露"状态
     //      感觉使用者应该负责这个free操作
     // -----------------------------------------------------
-    if (t_pool->tasks[t_pool->queue_tail].arg != NULL) {
-      free(t_pool->tasks[t_pool->queue_tail].arg);
-      t_pool->tasks[t_pool->queue_tail].arg = NULL;
-    }
+    // if (t_pool->tasks[t_pool->queue_tail].arg != NULL) {
+    //   free(t_pool->tasks[t_pool->queue_tail].arg);
+    //   t_pool->tasks[t_pool->queue_tail].arg = NULL;
+    // }
     t_pool->tasks[t_pool->queue_tail].handler = handler;
     t_pool->tasks[t_pool->queue_tail].arg = arg;
     t_pool->queue_tail = (t_pool->queue_tail + 1) % t_pool->queue_sz;
@@ -253,13 +253,13 @@ void *thr_worker(void *arg) {
     t_pool_ptr->count_act++;
     printf("thread: %lu activated\n", pthread_self());
     pthread_mutex_unlock(&(t_pool_ptr->count_lock));
-    printf("thread: %lu finished work\n", pthread_self());
     // 执行指定的函数
     (task.handler)(task.arg);
 
     pthread_mutex_lock(&(t_pool_ptr->count_lock));
     t_pool_ptr->count_act--;
     pthread_mutex_unlock(&(t_pool_ptr->count_lock));
+    printf("thread: %lu finished work\n", pthread_self());
   }
   pthread_exit(NULL);
 }
