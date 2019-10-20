@@ -1,3 +1,10 @@
+/*
+ *  epoll实现的多路IO转接 -- 反应堆模型
+ *      之前的模型中事件触发后返回了可以进行IO的文件描述符，
+ *      但是强大的epoll在epoll_event中支持了泛型指针，因此我们可以
+ *      自定义自己的返回结构体，携带自己需要的信息，甚至包括处理的
+ *      函数指针
+ */
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -221,7 +228,7 @@ _read_again:
         goto _read_again;
       }
       err_sys("read from socket error");
-    } else if(sz == 0) {
+    } else if (sz == 0) {
       printf("socket closed by client");
     }
     shutdown(sockfd, SHUT_RD);
