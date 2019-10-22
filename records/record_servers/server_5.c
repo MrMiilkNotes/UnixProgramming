@@ -48,7 +48,7 @@ typedef struct _event_data {
                                  //     -1：未使用
                                  //     0：经过初始化
                                  //     1：已经记录在epfd
-  int event;                     // 记录对应的监听类型
+  int event;                     // 记录对应的监听类型，read, write
   int sockfd;                    // 监听的sock
   void *arg;                     // 指向本身的指针，用于传入handler
   void (*handler)(int, void *);  // 事件满足的处理函数
@@ -75,8 +75,8 @@ void write_handler(int sockfd, void *arg);
 
 // --------------------------------------------------------------------------------
 //      global variable
-//          epfd epoll文件描述符
-//          clients 记录client连接，即epoll返回的指针指向的内容
+//          - epfd epoll文件描述符
+//          - clients 记录client连接，即epoll返回的指针指向的内容
 //              长度+1是为了将server自己的socketfd记录在最后一个
 // --------------------------------------------------------------------------------
 int epfd;
@@ -98,7 +98,7 @@ int main(void) {
   for (i = 0; i <= EPOLL_INITSIZE; ++i) {
     clients[i].status = -1;  // 用 status=-1 表示未使用
   }
-  // 这里将server自己的socketfd记录在clients的最后以为(!!!!)
+  // 这里将server自己的socketfd记录在clients的最后一位(!!!!)
   initSocket(epfd, &clients[EPOLL_INITSIZE]);  // 设置socket
 
   // ---------------------------------------
