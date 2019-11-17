@@ -124,7 +124,7 @@ void sigchld_handler(int signo) {
    *       因此可能出现信号发生多次而只进入处理函数处理一次
    *       好在可以使用waitpid循环处理，从而避免僵尸进程
    */
-  while ((pid = waitpid(0, &status, WNOHANG)) != 0) {
+  while ((pid = waitpid(0, &status, WNOHANG)) > 0) {
     pr_exit(status);
   }
 }
